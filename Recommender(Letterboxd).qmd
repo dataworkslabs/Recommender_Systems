@@ -1,0 +1,107 @@
+---
+title: "Recommender Systems: Analyzing Letterboxd"
+author: "Mark Hamer"
+date: "2026-04-23"
+format: html
+---
+
+## Introduction
+
+I chose Letterboxd for this analysis because it's a platform I actually use, and from what I researched online their approach to recommendations is pretty different from Netflix or Amazon. Letterboxd is a social network built around movies. Here's how it works: people rate films, write reviews, keep a diary of what they've watched, and build lists. 
+
+It launched in 2011 out of New Zealand and has grown a lot. Evidentally alot of the growth happened during COVID. By the end of 2024 it had over 17 million users, and in that year alone people logged 701 million films and wrote 96.4 million reviews! 
+
+What caught my attention for this assignment is that Letterboxd doesn't really have one single recommendation engine the way Netflix does. Instead, discovery happens through a mix of some things: an algorithmic "similar films" feature powered by a company called Nanocrowd, a social feed showing what your friends are watching, user-created lists that basically act as crowd-sourced recommendations, and editorial picks from their in-house magazine. That mix makes it a really interesting system to try to reverse engineer.
+
+## Scenario Design Analysis
+
+### Who are the target users?
+
+Letterboxd's users are generally people who already care about movies more than the average person, aka cinephiles like me. These aren't passive viewers looking for background noise, they're the kind of people who want to log what they watched, think about it, and maybe write something about it. Their are other users as the platform has attracted everyone from casual movie fans who just want to track what they've seen, to serious cinephiles who write novel length reviews and maintain lists of every Italian neorealist film ever made. Filmmakers and studios have also started showing up, so directors like Rian Johnson and organizations like the Criterion Collection and the Cannes Film Festival maintain active profiles.
+
+### What are their key goals?
+
+This is where it gets interesting, because the goals are different depending on whether you look at it from the organization's side or the user's side.
+
+**From Letterboxd's perspective**, the goals are about engagement and conversion. Like most apps, they want people to keep coming back, keep logging films, keep writing reviews, and ideally upgrade from a free account to a paid Pro or Patron subscription. The more active the community is, the more valuable the platform becomes. Both as a product and as a dataset. Every rating and review makes the recommendation features better, which attracts more users, which generates more data. Like a movie ferris wheel going round and round. 
+
+**From the user's perspective**, the main goal is very simple: find something good to watch. But there's a second goal that's almost as important, social connection around movies. People want to see what their friends thought of a film, argue about ratings, and share lists. For a lot of users the social experience IS the product, and recommendations are almost a side benefit that comes from being plugged into a community of people with similar taste.
+
+### How does the site accomplish those goals?
+
+Letterboxd uses several different channels to try to connect users with films they'll care about:
+
+- The **Similar Films** feature on each film's page, powered by Nanocrowd's algorithm, which analyzes the language in user reviews to cluster movies by mood and theme instead of just genre.
+- A **social activity feed** that shows what people you follow are watching, rating, and reviewing. Personally for me this is the single biggest driver of discovery on the platform.
+- **User-created lists** that function as crowd-sourced recommendations (things like "best horror movies that aren't actually scary" or "films where the dog doesn't die")
+- **Popular and trending** sections that surface what the broader community is watching right now
+- **Nanogenre tags** like "Suspense, Slick, Stylish" or "Tear-Jerker, Profound, Thoughtful" that let users browse by emotional reaction rather than traditional categories
+- **Editorial content** from the Letterboxd Journal, which publishes interviews and curated picks
+
+The tension between the organizational goals and the user goals shows up in pretty interesting ways. Letterboxd benefits when users log every film, including bad ones, because that data improves recommendations. But users typically only want to be recommended good films! Letterboxd also benefits from high engagement on popular mainstream releases, but many of its most devoted users are specifically looking for obscure or indy-darlings that fly under the radar.
+
+## Reverse Engineering Letterboxd's Recommender System
+
+### How the "Similar Films" feature actually works
+
+The most algorithmic part of Letterboxd's recommendation system is the "Similar Films" section that appears on each film's page. This isn't built in-house. It's powered by a partnership with a company called Nanocrowd that started in March 2022. What's interesting is how it works. Rather than using traditional collaborative filtering (people who liked X also liked Y), Nanocrowd's approach is built on natural language processing. Their ViewerVoice platform analyzes the actual text of user reviews to figure out how audiences emotionally react to a film. Films get grouped not by genre metadata but by the language people use to describe them. Neat, right? 
+
+So instead of just knowing that Looper is a "sci-fi action film," the system understands that people describe it with words that are related to suspense, stylishness, and/or plot twists. That lets it recommend films that feel similar even if they're in completely different genres. Each film gets tagged with "nanogenres", these are groups like "Twist, Mysterious, Confusing" or "Suspense, Guns, Action-Packed" and sometimes even broader themes. The system generates around 72 similar film recommendations per title, and users can filter those by decade, rating, or streaming availability.
+
+### The weighted rating system
+
+Letterboxd doesn't show a simple average of user ratings. They use a weighted calculation that accounts for several different things. Films with only a few ratings get pulled toward the platform average. Which makes sense because you don't want a movie with like three five-star ratings to be at the top of the charts, otherwise I'd review my films myself and be on the top of the recommendation list! They updated this system in mid-2023 specifically because their growth to nearly 10 million users had made them more vulnerable to rating manipulation (bad for me, good for film lovers) organized campaigns, regional biases, or superfan effects could skew scores. The new system identifies unusual rating patterns and down-weights them. I couldn't find the formula online so I don't think Letterboxd publish it.
+
+One academic study I found said that the platform found a strong negative correlation between a film's true average and the adjustment applied by the algorithm. Basically, films with extreme ratings (very high or very low) get pulled more toward the middle, while films near the platform average barely get adjusted at all. The researchers also found that niche genres like documentaries and musicals, which tend to have more polarized ratings, get penalized more heavily by this normalization. Poor documentaries. 
+
+### The social graph as a recommendation engine
+
+Arguably the most powerful recommendation system on Letterboxd isn't algorithmic at all though. It's the social activity feed. When you follow someone, their ratings, reviews, likes, and diary entries show up in your feed. Letterboxd explicitly describes this as a discovery tool on their welcome page, encouraging new users to follow people so that "we create a personalized Activity stream full of reviews and recommendations."
+
+This works because of selection bias in a good way. You tend to follow people whose taste you trust or find interesting, which means the films that show up in your feed are pre-filtered by people who are like informal curators for you. It's essentially word-of-mouth recommendation at a bigger scale. Pro and Patron subscribers can also filter their activity feed by type, which gives them more control over what kind of activity they see.
+
+### User-created lists as crowd-sourced filtering
+
+Lists are one of Letterboxd's most distinctive features and they work like a decentralized recommendation system. Anyone can create a list on any topic, and popular lists come up through search and browsing. In 2024, users created 6.8 million lists on the platform! These range from straightforward rankings ("Best films of 2024") to hyper-specific collections that no algorithm would ever generate on its own.
+
+The list system is pretty much content-based filtering done by humans instead of machines. A well-made list captures thematic connections between films that would be extremely difficult for an algorithm to discover. That may be things like visual style, narrative structure, or cultural context that don't show up cleanly in metadata.
+
+### What Letterboxd doesn't do
+
+Letterboxxd isn't perfect. It does not have a personalized "recommended for you" page that synthesizes your entire rating history into some hand-picked suggestions. There's no equivalent of Netflix's homepage where every row is algorithmically chosen for you, something I like about Netflix. The Similar Films feature is film-level and not user-level. It shows the same results regardless of who's looking at it. Several third-party developers have built their own recommendation tools on top of Letterboxd data using collaborative filtering with something called SVD, mentioned above, which suggests there's a clear gap that users would like to be filled.
+
+## Recommendations for Improvement
+
+### 1. Add personalized recommendations
+
+Like stated above, a personalize recommendation system is the biggest gap. The Similar Films suggestions are the same for every user, they're tied to the film and not to you, the user. Multiple people have built their own recommendation tools on top of scraped Letterboxd data, which tells you users clearly want this and the platform isn't delivering it. Letterboxd already has the data to make this work, millions of rating histories that could feed a collaborative filtering model. A personalized recommendation page could also give people a reason to upgrade to a paid subscription and that would help the business side too.
+
+### 2. Make the social feed smarter
+
+The activity feed is one of the best discovery tools on the platform, but it's pretty blunt. I know from personal experience that if someone you follow logs 20 films in a row it'll just flood your feed. Letterboxd could weight what shows up based on how closely your taste actually matches each person you follow. A five-star review from someone you agree with 85% of the time should probably surface higher than one from someone you agree with 40% of the time. That would keep the human and word-of-mouth quality of the feed while making it work harder as a recommendation tool.
+
+### 3. Help users discover films outside the mainstream
+
+Letterboxd's trending and popular sections naturally push widely-seen movies to the top, but a huge chunk of the user base are there to find stuff they wouldn't hear about anyway. The platform could add a discovery mode for highly-rated films that haven't broken through yet, so maybe something like films rated 4+ stars by a meaningful number of users but watched by relatively few people overall. That kind of feature would serve the cinephile audience, like me, that makes Letterboxd what it is and would also help smaller filmmakers, also me, find viewers.
+
+## Conclusion
+
+Letterboxd is in an interesting position. It has a massive and highly engaged user base that generates tons of valuable data, ratings, reviews, lists, social connections, but I think it's pretty conservative in how it uses that data for recommendations. The Nanocrowd partnership is smart and the social feed works pretty well as a discovery tool, but there's no real personalization that ties it all together. The fact that third-party developers keep building their own recommendation engines on top of Letterboxd data is probably the clearest sign that there's a gap worth filling. The platform has all the ingredients for a great recommender system but it just hasn't built one yet.
+
+## References
+
+1. Letterboxd. "Welcome to Letterboxd." https://letterboxd.com/welcome/
+
+2. Letterboxd. "How is the average rating calculated for a film?" Letterboxd Help Center. https://letterboxd.zendesk.com/hc/en-us/articles/15269023950223-How-is-the-average-rating-calculated-for-a-film
+
+3. Letterboxd. "The Score: We've Updated Our Weighted-Rating Calculations." Letterboxd Journal, June 2023. https://letterboxd.com/journal/the-score-new-weighted-average-ratings/
+
+4. Letterboxd. "Film Feelings: Using 'Nanogenres' to Find Similar Films." Letterboxd Journal, September 2022. https://letterboxd.com/journal/film-feelings-nanogenres/
+
+5. Nanocrowd. "Nanocrowd and Letterboxd Help You Find Movies and Series You'll Love to Watch." March 2022. https://nanocrowd.com/nanocrowd-letterboxd/
+
+6. Wikipedia. "Letterboxd." https://en.wikipedia.org/wiki/Letterboxd
+
+7. Learner, Sam. "Letterboxd Movie Recommendations." https://letterboxd.samlearner.com/
+
+8. Bhardwaj, Aditya. "Movie Recommendation System Using SVD (Letterboxd)." ResearchGate, October 2023. https://www.research
